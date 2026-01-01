@@ -2,9 +2,12 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract DEX is ReentrancyGuard {
+    using SafeERC20 for IERC20;
+    
     // State variables
     address public tokenA;
     address public tokenB;
@@ -46,14 +49,8 @@ contract DEX is ReentrancyGuard {
         require(amountA > 0 && amountB > 0, "DEX: insufficient amounts");
         
         // Transfer tokens from user to contract
-        require(
-            IERC20(tokenA).transferFrom(msg.sender, address(this), amountA),
-            "DEX: transferFrom tokenA failed"
-        );
-        require(
-            IERC20(tokenB).transferFrom(msg.sender, address(this), amountB),
-            "DEX: transferFrom tokenB failed"
-        );
+        IERC20(tokenA).safeTransferFrom(msg.sender, address(this), amountA);
+        IERC20(tokenB).safeTransferFrom(msg.sender, address(this), amountB);
         
         // Calculate liquidity to mint
         if (totalLiquidity == 0) {
@@ -104,14 +101,8 @@ contract DEX is ReentrancyGuard {
         reserveB -= amountB;
         
         // Transfer tokens back to user
-        require(
-            IERC20(tokenA).transfer(msg.sender, amountA),
-            "DEX: transfer tokenA failed"
-        );
-        require(
-            IERC20(tokenB).transfer(msg.sender, amountB),
-            "DEX: transfer tokenB failed"
-        );
+        IERC20(tokenA).safeTransfer(msg.sender, amountA);
+        IERC20(tokenB).safeTransfer(msg.sender, amountB);
         
         emit LiquidityRemoved(msg.sender, amountA, amountB, liquidityAmount);
     }
@@ -133,20 +124,14 @@ contract DEX is ReentrancyGuard {
         require(amountBOut < reserveB, "DEX: insufficient liquidity for swap");
         
         // Transfer token A from user to contract
-        require(
-            IERC20(tokenA).transferFrom(msg.sender, address(this), amountAIn),
-            "DEX: transferFrom tokenA failed"
-        );
+        IERC20(tokenA).safeTransferFrom(msg.sender, address(this), amountAIn);
         
         // Update reserves
         reserveA += amountAIn;
         reserveB -= amountBOut;
         
         // Transfer token B to user
-        require(
-            IERC20(tokenB).transfer(msg.sender, amountBOut),
-            "DEX: transfer tokenB failed"
-        );
+        IERC20(tokenB).safeTransfer(msg.sender, amountBOut);
         
         emit Swap(msg.sender, tokenA, tokenB, amountAIn, amountBOut);
     }
@@ -168,20 +153,14 @@ contract DEX is ReentrancyGuard {
         require(amountAOut < reserveA, "DEX: insufficient liquidity for swap");
         
         // Transfer token B from user to contract
-        require(
-            IERC20(tokenB).transferFrom(msg.sender, address(this), amountBIn),
-            "DEX: transferFrom tokenB failed"
-        );
+        IERC20(tokenB).safeTransferFrom(msg.sender, address(this), amountBIn);
         
         // Update reserves
         reserveB += amountBIn;
         reserveA -= amountAOut;
         
         // Transfer token A to user
-        require(
-            IERC20(tokenA).transfer(msg.sender, amountAOut),
-            "DEX: transfer tokenA failed"
-        );
+        IERC20(tokenA).safeTransfer(msg.sender, amountAOut);
         
         emit Swap(msg.sender, tokenB, tokenA, amountBIn, amountAOut);
     }
